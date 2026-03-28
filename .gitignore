@@ -1,0 +1,27 @@
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Core dependencies (installed via pip)
+venv/
+env/
+.env/
+
+# Data and Artifacts
+output_aligned/
+output/
+*.log
+*.onnx
+*.onnx.data
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Distribution
+dist/
+build/
+*.egg-info/
