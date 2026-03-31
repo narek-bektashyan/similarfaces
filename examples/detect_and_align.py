@@ -3,11 +3,11 @@ import numpy as np
 import os
 import sys
 
-# Add parent directory to path so facelib can be imported when running from examples/
+# Add parent directory to path so similarfaces can be imported when running from examples/
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import functional wrappers directly for a cleaner look
-from facelib import detect_faces, align_face
+from similarfaces import detect_faces, align_face
 
 def main():
     """
@@ -20,7 +20,7 @@ def main():
         print(f"Error: Could not load image from {image_path}")
         return
 
-    print(f"--- facelib: Integrated Detection & Quality Demo ---")
+    print(f"--- similarfaces: Integrated Detection & Quality Demo ---")
 
     # 2. Detect faces using the simple functional wrapper
     # This automatically computes quality scores for each face.

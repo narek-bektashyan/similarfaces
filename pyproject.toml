@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "facelib"
+name = "similarfaces"
 version = "1.0.0"
 description = "A production-ready Face Recognition library powered by ONNX"
 readme = "README.md"
@@ -27,4 +27,4 @@ Homepage = "https://github.com/narek/similarfaces"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["facelib*"]
+include = ["similarfaces*"]

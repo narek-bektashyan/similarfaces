@@ -26,6 +26,10 @@ class FaceQualityScorer:
             providers (list): ONNX Runtime execution providers.
         """
         self.model_path = model_path or get_model_path("quality_assessment.onnx")
+        
+        # Ensure the external weights data file is downloaded
+        if not model_path:
+            get_model_path("model.onnx.data")
         try:
             self.session = ort.InferenceSession(self.model_path, providers=providers)
             self.input_name = self.session.get_inputs()[0].name

@@ -3,14 +3,14 @@ import numpy as np
 import sys
 import os
 
-# Add parent directory to path so facelib can be imported when running from examples/
+# Add parent directory to path so similarfaces can be imported when running from examples/
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from facelib import detect_faces, extract_features, compare_faces
+from similarfaces import detect_faces, extract_features, compare_faces
 
 def main():
     """
-    Demonstrates the clean and robust functional API of facelib.
+    Demonstrates the clean and robust functional API of similarfaces.
     """
     # 1. Load high-quality sample images
     image_path1 = "images/image1.png"
@@ -23,7 +23,7 @@ def main():
         print(f"Error: Could not load images from {image_path1} or {image_path2}")
         return
 
-    print("--- facelib: Robust Functional Face Comparison Demo ---")
+    print("--- similarfaces: Robust Functional Face Comparison Demo ---")
     print(f"Comparing: {image_path1} vs {image_path2}")
 
     # 2. Detect and automatically score quality

@@ -1,4 +1,4 @@
-# facelib: High-Performance Face Recognition
+# similarfaces: High-Performance Face Recognition
 
 A production-ready, clean, and robust face recognition pipeline powered by ONNX Runtime.
 
@@ -6,7 +6,7 @@ A production-ready, clean, and robust face recognition pipeline powered by ONNX 
 
 ## 🌟 Overview
 
-**facelib** is a streamlined, high-performance Python library for face detection, alignment, quality assessment, and recognition. Designed with modularity and ease of use in mind, it provides a functional API that leverages state-of-the-art models optimized for ONNX Runtime.
+**similarfaces** is a streamlined, high-performance Python library for face detection, alignment, quality assessment, and recognition. Designed with modularity and ease of use in mind, it provides a functional API that leverages state-of-the-art models optimized for ONNX Runtime.
 
 ### ✨ New Key Features
 
@@ -34,7 +34,7 @@ Compare two faces with high-quality filtering using the functional API:
 
 ```python
 import cv2
-from facelib import detect_faces, extract_features, compare_faces
+from similarfaces import detect_faces, extract_features, compare_faces
 
 # Load images (cv2 loads as BGR)
 img1 = cv2.imread("images/image1.png")
@@ -71,11 +71,11 @@ else:
 
 The library is designed to be developer-friendly and easy to extend:
 
-- `facelib.detector`: High-performance face detection logic.
-- `facelib.aligner`: Face alignment and warping.
-- `facelib.scorer`: Quality assessment model.
-- `facelib.encoder`: Feature embedding extraction.
-- `facelib.models`: Data models including the unified `Face` dataclass.
+- `similarfaces.detector`: High-performance face detection logic.
+- `similarfaces.aligner`: Face alignment and warping.
+- `similarfaces.scorer`: Quality assessment model.
+- `similarfaces.encoder`: Feature embedding extraction.
+- `similarfaces.models`: Data models including the unified `Face` dataclass.
 
 ---
 
