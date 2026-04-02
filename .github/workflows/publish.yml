@@ -1,5 +1,7 @@
 name: Publish to PyPI
-
+  # Set the Node 24 flag at the job level to ensure it applies to all steps
+env:
+   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 on:
   release:
     types: [published]
@@ -7,9 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Set the Node 24 flag at the job level to ensure it applies to all steps
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  
 
     steps:
       - name: Checkout Code
