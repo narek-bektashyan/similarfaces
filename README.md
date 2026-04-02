@@ -35,9 +35,10 @@ image = cv2.imread("image.jpg")
 faces = detect_faces(image)
 
 for face in faces:
-    print(f"Found face with confidence {face['score']:.2f}")
+    print(f"Found face with confidence {face['detection_score']:.2f}")
     print(f"Quality Score: {face['quality_score']:.2f}")
     print(f"Bounding Box: {face['bbox']}")
+    print(f"Landmarks: {face['landmarks']}")
 ```
 
 ### 2. Compare Two Faces
