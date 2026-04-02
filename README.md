@@ -6,16 +6,15 @@ A production-ready, clean, and robust face recognition pipeline powered by ONNX 
 
 ## 🌟 Overview
 
-**similarfaces** is a streamlined, high-performance Python library for face detection, alignment, quality assessment, and recognition. Designed with modularity and ease of use in mind, it provides a functional API that leverages state-of-the-art models optimized for ONNX Runtime.
+**similarfaces** is a streamlined Python library for face detection, alignment, quality assessment, and recognition. It provides a simple functional API and automatically downloads optimized ONNX models on demand.
 
-### ✨ New Key Features
+### ✨ Key Features
 
-- 🏗️ **Functional API**: Clean and intuitive functional wrappers (`detect_faces`, `extract_features`, `compare_faces`, `align_face`) without the need to manually manage processor objects.
-- 📦 **Structured Data Models**: All functions utilize a unified `Face` dataclass, ensuring type safety and easy access to bounding boxes, landmarks, quality scores, and embeddings.
-- 🎯 **Integrated Detection & Quality**: `detect_faces()` now performs both robust face localization and automatic quality assessment in a single, efficient pass.
-- 📐 **Optimal Alignment**: Similarity transforms for standardized 112x112 face cropping.
-- 🧠 **High-accuracy Recognition**: Extract deep feature embeddings for high-accuracy face comparison.
-- ⚡ **ONNX Powered**: Sub-millisecond inference speeds with minimal dependencies across CPU and GPU environments.
+- 🏗️ **Simple Functional API**: `detect_faces`, `extract_features`, `compare_faces`, `align_face`.
+- 📦 **Dictionary-Based Results**: Functions return standard Python dicts for easy JSON serialization.
+- ⏬ **Auto-Downloading**: Models are automatically fetched from Hugging Face with a beautiful `tqdm` progress bar.
+- 🎯 **Integrated Quality**: Each detected face includes a quality score (0.0 to 1.0).
+- ⚡ **ONNX Powered**: High-speed inference using ONNX Runtime.
 
 ---
 
@@ -24,74 +23,68 @@ A production-ready, clean, and robust face recognition pipeline powered by ONNX 
 ### Installation
 
 ```bash
-pip install -r requirements.txt
-pip install -e .  # Install in editable mode for development
+pip install similarfaces
 ```
 
-### Basic Usage
+### 1. Simple Face Detection
+```python
+from similarfaces import detect_faces
+import cv2
 
-Compare two faces with high-quality filtering using the functional API:
+image = cv2.imread("image.jpg")
+faces = detect_faces(image)
 
+for face in faces:
+    print(f"Found face with confidence {face['score']:.2f}")
+    print(f"Quality Score: {face['quality_score']:.2f}")
+    print(f"Bounding Box: {face['bbox']}")
+```
+
+### 2. Compare Two Faces
 ```python
 import cv2
 from similarfaces import detect_faces, extract_features, compare_faces
 
-# Load images (cv2 loads as BGR)
-img1 = cv2.imread("images/image1.png")
-img2 = cv2.imread("images/image2.png")
+# Load images
+img1, img2 = cv2.imread("face1.jpg"), cv2.imread("face2.jpg")
 
-# Detect faces (includes quality scores by default)
-faces1 = detect_faces(img1)
-faces2 = detect_faces(img2)
+# 1. Detect (returns list of dicts)
+face1 = detect_faces(img1)[0]
+face2 = detect_faces(img2)[0]
 
-if faces1 and faces2:
-    # Pick the best face from each image based on quality score
-    face1 = max(faces1, key=lambda x: x.quality_score)
-    face2 = max(faces2, key=lambda x: x.quality_score)
+# 2. Extract 512-d embeddings
+face1["embedding"] = extract_features(img1, face1)["embedding"]
+face2["embedding"] = extract_features(img2, face2)["embedding"]
 
-    # Extract embeddings
-    face1.embedding = extract_features(img1, face1)
-    face2.embedding = extract_features(img2, face2)
-
-    # Compare faces
-    similarity = compare_faces(face1, face2)
-    print(f"Similarity: {similarity:.4f}")
-    
-    if similarity > 0.6:
-        print("Outcome: Matches (Same Person)")
-    else:
-        print("Outcome: No Match")
-else:
-    print("Error: Could not find faces in one or both images.")
+# 3. Compare (returns 0.0 to 1.0)
+similarity = compare_faces(face1, face2)
+print(f"Similarity: {similarity:.4f}")
+print("Same person!" if similarity > 0.6 else "Different people.")
 ```
 
 ---
 
-## 🛠 Project Structure
+## 🛠 Advanced Usage
 
-The library is designed to be developer-friendly and easy to extend:
+### Using the Face object
+If you prefer objects over dictionaries, you can use the `Face` class:
 
-- `similarfaces.detector`: High-performance face detection logic.
-- `similarfaces.aligner`: Face alignment and warping.
-- `similarfaces.scorer`: Quality assessment model.
-- `similarfaces.encoder`: Feature embedding extraction.
-- `similarfaces.models`: Data models including the unified `Face` dataclass.
+```python
+from similarfaces import detect_faces, Face
 
----
+faces_dicts = detect_faces(image)
+face_obj = Face.from_dict(faces_dicts[0])
 
-## 📊 Performance
-
-| Module | Model | Input Size | Accuracy |
-| :--- | :--- | :--- | :--- |
-| **Detection** | MobileNet-based | 640x640 | High |
-| **Recognition** | IR50-based | 112x112 | SOTA |
-| **Quality** | FaceQuality-ONNX | 128x128 | Robust |
+# Now use object methods
+annotated_img = face_obj.draw(image)
+cv2.imwrite("result.jpg", annotated_img)
+```
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 

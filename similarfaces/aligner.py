@@ -19,6 +19,12 @@ class FaceAligner:
     ], dtype=np.float32)
 
     def __init__(self, target_size: int = 112) -> None:
+        """
+        Initialize the FaceAligner.
+        
+        Args:
+            target_size (int): Standard output size for aligned faces. Defaults to 112.
+        """
         self.target_size = target_size
 
     def compute_alignment_matrix(self, points: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

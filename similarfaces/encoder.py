@@ -17,9 +17,11 @@ class FaceEncoder:
     Uses ONNX Runtime for inference. Default embedding size is 512.
     """
 
-    def __init__(self, model_path: Optional[str] = None, providers: List[str] = ["CPUExecutionProvider"]) -> None:
+    def __init__(self,        model_path: Optional[str] = None,
+        providers: List[str] = ["CPUExecutionProvider"]
+    ) -> None:
         """
-        Initialize the FaceEncoder.
+        Initialize the FaceEncoder for embedding extraction.
         
         Args:
             model_path (str, optional): Path to the embedding ONNX model.
@@ -87,15 +89,15 @@ class FaceEncoder:
         normalize: bool = True
     ) -> np.ndarray:
         """
-        Align face and extract embedding in one step.
+        Perform face alignment and embedding extraction in a single step.
         
         Args:
-            image (np.ndarray): Full image in BGR.
-            keypoints (np.ndarray): 5-point facial landmarks.
+            image (np.ndarray): Original full image (BGR).
+            keypoints (np.ndarray): 5-point facial landmarks for alignment.
             normalize (bool): Whether to L2-normalize the output vector.
             
         Returns:
-            np.ndarray: Face embedding vector.
+            np.ndarray: A 512-dimensional face embedding vector.
         """
         aligned_face, _ = self.aligner.align(image, keypoints)
         return self.encode_aligned(aligned_face, normalize=normalize)

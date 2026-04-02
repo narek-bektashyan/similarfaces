@@ -35,8 +35,8 @@ def main():
     # 3. Process each face individually
     for i, face in enumerate(faces):
         print(f"\nProcessing Face {i+1}:")
-        print(f"  Detection Score: {face.score:.4f}")
-        print(f"  Quality Score: {face.quality_score:.4f}")
+        print(f"  Detection Score: {face['detection_score']:.2f}")
+        print(f"  Quality Score: {face['quality_score']:.2f}")
 
         # 4. Align face using the functional wrapper
         aligned_face = align_face(image, face)

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import onnxruntime as ort
-from typing import List, Tuple, Any
+from typing import List, Tuple, Optional, Union
 from .utils import get_model_path
 
 from .models import Face
@@ -56,17 +56,17 @@ class FaceDetector:
         nms_threshold: float = 0.4,
         use_letterbox: bool = True,
         providers: List[str] = ["CPUExecutionProvider"]
-    ):
+    ) -> None:
         """
         Initialize the FaceDetector.
         
         Args:
             model_path (str, optional): Path to the detection ONNX model.
-            input_size (tuple): Model input size (width, height). Defaults to (640, 640).
+            input_size (Tuple[int, int]): Model input size (width, height). Defaults to (640, 640).
             score_threshold (float): Confidence threshold for detection. Defaults to 0.8.
             nms_threshold (float): Non-maximum suppression threshold. Defaults to 0.4.
             use_letterbox (bool): Whether to use letterbox resizing. Defaults to True.
-            providers (list): ONNX Runtime execution providers.
+            providers (List[str]): ONNX Runtime execution providers.
         """
         self.model_path = model_path or get_model_path("detection.onnx")
         self.input_width, self.input_height = input_size
@@ -131,7 +131,15 @@ class FaceDetector:
         return landmarks.reshape(-1, 5, 2)
 
     def preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int]]:
-        """Preprocess image for detection."""
+        """
+        Preprocess image for detection: resize, normalize, and transpose.
+        
+        Args:
+            image (np.ndarray): Original BGR image.
+            
+        Returns:
+            Tuple[np.ndarray, float, Tuple[int, int]]: Preprocessed tensor, resize scale, and padding.
+        """
         if self.use_letterbox:
             resized, scale, pad = letterbox_resize(image, (self.input_width, self.input_height))
         else:

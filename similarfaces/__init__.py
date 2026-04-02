@@ -1,3 +1,5 @@
+import numpy as np
+from typing import List, Union, Optional
 from .detector import FaceDetector
 from .encoder import FaceEncoder
 from .aligner import FaceAligner
@@ -24,61 +26,83 @@ def _get_encoder():
         _encoder = FaceEncoder()
     return _encoder
 
-def detect_faces(image: "np.ndarray", score_quality: bool = True) -> "List[Face]":
+def detect_faces(image: np.ndarray, score_quality: bool = True) -> List[dict]:
     """
     Detect faces in an image and calculate their quality scores.
     
     Args:
         image (np.ndarray): Image in BGR format.
-        score_quality (bool): Whether to calculate quality scores (default: True).
-        
+        score_quality (bool): Whether to calculate quality scores for each face. 
+            Defaults to True.
+            
     Returns:
-        List[Face]: List of detected faces with bounding boxes, landmarks, and quality.
+        List[dict]: A list of detected faces, each represented as a dictionary.
     """
-    return _get_detector().detect(image, score_quality=score_quality)
+    faces = _get_detector().detect(image, score_quality=score_quality)
+    return [face.to_dict(json_serializable=False) for face in faces]
 
-def extract_features(image: "np.ndarray", face: "Face") -> "np.ndarray":
+def extract_features(image: np.ndarray, face: Union[Face, dict]) -> dict:
     """
-    Extract facial features (512-d embedding) from an image.
+    Extract a 512-dimensional facial feature embedding from an image.
     
     Args:
-        image (np.ndarray): Original full image (BGR).
-        face (Face): Face object containing landmarks.
+        image (np.ndarray): Original full image in BGR format.
+        face (Union[Face, dict]): Face object or dictionary containing landmarks.
         
     Returns:
-        np.ndarray: L2-normalized face embedding vector.
+        dict: A dictionary containing the 'embedding' (512-d np.ndarray).
     """
-    return _get_encoder().encode(image, face.landmarks)
+    if isinstance(face, dict):
+        landmarks = np.array(face["landmarks"])
+    else:
+        landmarks = face.landmarks
+        
+    embedding = _get_encoder().encode(image, landmarks)
+    return {"embedding": embedding}
 
-def align_face(image: "np.ndarray", face: "Face") -> "np.ndarray":
+def align_face(image: np.ndarray, face: Union[Face, dict]) -> np.ndarray:
     """
-    Align a face to a standard 112x112 size for identification tasks.
+    Align a face to a standard 112x112 size suitable for identification tasks.
     
     Args:
-        image (np.ndarray): Original full image (BGR).
-        face (Face): Face object containing landmarks.
+        image (np.ndarray): Original full image in BGR format.
+        face (Union[Face, dict]): Face object or dictionary containing landmarks.
         
     Returns:
-        np.ndarray: Aligned 112x112 face image.
+        np.ndarray: Aligned 112x112 face image (BGR).
     """
-    aligned, _ = _get_encoder().aligner.align(image, face.landmarks)
+    if isinstance(face, dict):
+        landmarks = np.array(face["landmarks"])
+    else:
+        landmarks = face.landmarks
+        
+    aligned, _ = _get_encoder().aligner.align(image, landmarks)
     return aligned
 
-def compare_faces(face1: "Face", face2: "Face") -> float:
+def compare_faces(face1: Union[Face, dict], face2: Union[Face, dict]) -> float:
     """
-    Compute similarity between two faces using their embeddings.
+    Compute cosine similarity between two faces using their embeddings.
     
     Args:
-        face1 (Face): First face with embedding.
-        face2 (Face): Second face with embedding.
+        face1 (Union[Face, dict]): First face with an 'embedding' key or attribute.
+        face2 (Union[Face, dict]): Second face with an 'embedding' key or attribute.
         
     Returns:
-        float: Similarity score (0.0 to 1.0).
+        float: Similarity score, typically between 0.0 and 1.0.
     """
-    if face1.embedding is None or face2.embedding is None:
-        raise ValueError("Both faces must have embeddings for comparison.")
-    import numpy as np
-    return float(np.dot(face1.embedding, face2.embedding))
+    def _get_emb(f: Union[Face, dict]) -> Optional[np.ndarray]:
+        if isinstance(f, dict):
+            return f.get("embedding")
+        return getattr(f, "embedding", None)
+
+    emb1 = _get_emb(face1)
+    emb2 = _get_emb(face2)
+    
+    if emb1 is None or emb2 is None:
+        raise ValueError("Both faces must have high-quality embeddings for comparison. "
+                         "Please call extract_features() first.")
+    
+    return float(np.dot(emb1, emb2))
 
 __all__ = [
     "Face",

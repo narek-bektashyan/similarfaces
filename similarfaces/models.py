@@ -21,15 +21,57 @@ class Face:
     quality_score: Optional[float] = None
     embedding: Optional[np.ndarray] = None
 
-    def to_dict(self) -> dict:
-        """Convert the Face object to a JSON-serializable dictionary."""
+    def to_dict(self, json_serializable: bool = True) -> dict:
+        """
+        Convert the Face object to a dictionary representation.
+        
+        Args:
+            json_serializable (bool): If True, converts all numpy arrays to lists 
+                for JSON compatibility. If False, preserves numpy arrays.
+                Defaults to True.
+            
+        Returns:
+            dict: A dictionary containing 'bbox', 'detection_score', 
+                'landmarks', and 'quality_score'.
+        """
+        if json_serializable:
+            return {
+                "bbox": self.bbox.tolist(),
+                "detection_score": round(float(self.score), 2),
+                "landmarks": self.landmarks.tolist() if self.landmarks is not None else None,
+                "quality_score": round(float(self.quality_score), 2) if self.quality_score is not None else None,
+            }
+        
         return {
-            "bbox": self.bbox.tolist(),
-            "score": float(self.score),
-            "landmarks": self.landmarks.tolist() if self.landmarks is not None else None,
-            "quality_score": float(self.quality_score) if self.quality_score is not None else None,
-            "embedding": self.embedding.tolist() if self.embedding is not None else None,
+            "bbox": self.bbox,
+            "detection_score": round(self.score, 2),
+            "landmarks": self.landmarks,
+            "quality_score": round(self.quality_score, 2) if self.quality_score is not None else None,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'Face':
+        """
+        Create a Face object from a dictionary representation.
+        
+        Args:
+            data (dict): Dictionary with keys such as 'bbox', 'score', etc.
+            
+        Returns:
+            Face: A new Face instance populated from the dictionary.
+        """
+        # Handle both old 'score' and new 'detection_score' keys
+        score = data.get("detection_score", data.get("score"))
+        if score is None:
+            raise KeyError("Dictionary must contain 'detection_score' or 'score'")
+            
+        return cls(
+            bbox=np.array(data["bbox"]) if isinstance(data["bbox"], list) else data["bbox"],
+            score=float(score),
+            landmarks=np.array(data["landmarks"]) if data.get("landmarks") is not None and isinstance(data["landmarks"], list) else data.get("landmarks"),
+            quality_score=float(data["quality_score"]) if data.get("quality_score") is not None else None,
+            embedding=np.array(data["embedding"]) if data.get("embedding") is not None and isinstance(data["embedding"], list) else data.get("embedding"),
+        )
 
     def draw(self, image: np.ndarray, color=(0, 255, 0), thickness=2) -> np.ndarray:
         """

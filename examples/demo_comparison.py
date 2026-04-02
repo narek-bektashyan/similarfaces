@@ -6,7 +6,7 @@ import os
 # Add parent directory to path so similarfaces can be imported when running from examples/
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from similarfaces import detect_faces, extract_features, compare_faces
+from similarfaces import detect_faces, extract_features, compare_faces, Face
 
 def main():
     """
@@ -35,31 +35,28 @@ def main():
         return
 
     # 3. Pick the best face from each image
-    face1 = max(faces1, key=lambda x: x.quality_score)
-    face2 = max(faces2, key=lambda x: x.quality_score)
-
-    print(f"\nFace 1 Quality: {face1.quality_score:.4f} (Score: {face1.score:.4f})")
-    print(f"Face 2 Quality: {face2.quality_score:.4f} (Score: {face2.score:.4f})")
+    face1 = max(faces1, key=lambda x: x["quality_score"])
+    face2 = max(faces2, key=lambda x: x["quality_score"])
+    
+    print(f"\nFace 1 Quality: {face1['quality_score']:.4f} (Score: {face1['detection_score']:.4f})")
+    print(f"Face 2 Quality: {face2['quality_score']:.4f} (Score: {face2['detection_score']:.4f})")
 
     # 4. Extract embeddings
-    face1.embedding = extract_features(img1, face1)
-    face2.embedding = extract_features(img2, face2)
-
+    face1["embedding"] = extract_features(img1, face1)["embedding"]
+    face2["embedding"] = extract_features(img2, face2)["embedding"]
+ 
     # 5. Compute similarity
     similarity = compare_faces(face1, face2)
     
     is_same = similarity > 0.6
     print(f"Similarity Score: {similarity:.4f}")
     print(f"Decision: {'MATCH' if is_same else 'NO MATCH'}")
-
+ 
     # 6. Visualize
     os.makedirs("output", exist_ok=True)
-    cv2.imwrite("output/result1.jpg", face1.draw(img1))
-    cv2.imwrite("output/result2.jpg", face2.draw(img2))
+    cv2.imwrite("output/result1.jpg", Face.from_dict(face1).draw(img1))
+    cv2.imwrite("output/result2.jpg", Face.from_dict(face2).draw(img2))
     print("\nVisualization saved to 'output/' directory.")
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()

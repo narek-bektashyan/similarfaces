@@ -17,7 +17,11 @@ class FaceQualityScorer:
     A higher score (closer to 1.0) means higher quality.
     """
 
-    def __init__(self, model_path: Optional[str] = None, providers: List[str] = ["CPUExecutionProvider"]):
+    def __init__(
+        self,
+        model_path: Optional[str] = None,
+        providers: List[str] = ["CPUExecutionProvider"]
+    ) -> None:
         """
         Initialize the FaceQualityScorer.
         
