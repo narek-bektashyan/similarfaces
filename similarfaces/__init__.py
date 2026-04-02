@@ -6,7 +6,7 @@ from .aligner import FaceAligner
 from .scorer import FaceQualityScorer
 from .models import Face
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 # Lazy-loaded model instances
 _detector = None
