@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "similarfaces"
-version = "1.0.1"
+version = "1.0.2"
 description = "A production-ready Face Recognition library powered by ONNX"
 readme = "README.md"
 requires-python = ">=3.8"
