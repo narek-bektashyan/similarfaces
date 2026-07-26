@@ -8,7 +8,7 @@ import urllib.request
 from tqdm import tqdm
 
 HF_MODEL_REPOS = {
-    "detection.onnx": "https://huggingface.co/similarfaces/face-detector/resolve/main/",
+    "detect.onnx": "https://huggingface.co/similarfaces/face-detector/resolve/main/",
     "features_extraction.onnx": "https://huggingface.co/similarfaces/face-features/resolve/main/",
     "quality_assessment.onnx": "https://huggingface.co/similarfaces/face-quality/resolve/main/",
     "model.onnx.data": "https://huggingface.co/similarfaces/face-quality/resolve/main/",

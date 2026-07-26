@@ -10,7 +10,7 @@ from .aligner import FaceAligner
 from .scorer import FaceQualityScorer
 
 
-def letterbox_resize(image: np.ndarray, target_size: Tuple[int, int]) -> Tuple[np.ndarray, float, Tuple[int, int]]:
+def letterbox_resize(image: np.ndarray, target_size: Tuple[int, int]) -> Tuple[np.ndarray, float, Tuple[float, float]]:
     """
     Resize image with unchanged aspect ratio using padding (letterbox).
     
@@ -25,18 +25,22 @@ def letterbox_resize(image: np.ndarray, target_size: Tuple[int, int]) -> Tuple[n
     target_w, target_h = target_size
 
     scale = min(target_w / img_w, target_h / img_h)
-    new_w = int(img_w * scale)
-    new_h = int(img_h * scale)
+    new_w = int(round(img_w * scale))
+    new_h = int(round(img_h * scale))
 
-    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    if (img_w, img_h) != (new_w, new_h):
+        resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    else:
+        resized = image
 
-    dw = target_w - new_w
-    dh = target_h - new_h
-    top, bottom = dh // 2, dh - (dh // 2)
-    left, right = dw // 2, dw - (dw // 2)
+    dw = (target_w - new_w) / 2
+    dh = (target_h - new_h) / 2
+
+    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
 
     padded = cv2.copyMakeBorder(
-        resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(0, 0, 0)
+        resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114)
     )
 
     return padded, scale, (dw, dh)
@@ -51,9 +55,8 @@ class FaceDetector:
     def __init__(
         self,
         model_path: str = None,
-        input_size: Tuple[int, int] = (640, 640),
+        input_size: Tuple[int, int] = (320, 320),
         score_threshold: float = 0.8,
-        nms_threshold: float = 0.4,
         use_letterbox: bool = True,
         providers: List[str] = ["CPUExecutionProvider"]
     ) -> None:
@@ -62,23 +65,16 @@ class FaceDetector:
         
         Args:
             model_path (str, optional): Path to the detection ONNX model.
-            input_size (Tuple[int, int]): Model input size (width, height). Defaults to (640, 640).
+            input_size (Tuple[int, int]): Model input size (width, height). Defaults to (320, 320).
             score_threshold (float): Confidence threshold for detection. Defaults to 0.8.
-            nms_threshold (float): Non-maximum suppression threshold. Defaults to 0.4.
             use_letterbox (bool): Whether to use letterbox resizing. Defaults to True.
             providers (List[str]): ONNX Runtime execution providers.
         """
-        self.model_path = model_path or get_model_path("detection.onnx")
+        self.model_path = model_path or get_model_path("detect.onnx")
         self.input_width, self.input_height = input_size
         self.score_threshold = score_threshold
-        self.nms_threshold = nms_threshold
         self.use_letterbox = use_letterbox
         self.providers = providers
-
-        # Anchor settings
-        self.min_sizes = [[16, 32], [64, 128], [256, 512]]
-        self.steps = [8, 16, 32]
-        self.variance = [0.1, 0.2]
 
         # Core session
         try:
@@ -91,46 +87,8 @@ class FaceDetector:
         # Lazy-loaded assistants for integrated quality scoring
         self._aligner = None
         self._scorer = None
-        
-        self.priors = self._generate_priors((self.input_height, self.input_width))
 
-    def _generate_priors(self, image_size: Tuple[int, int]) -> np.ndarray:
-        """Generate anchor boxes for detection."""
-        anchors = []
-        im_h, im_w = image_size
-
-        for k, step in enumerate(self.steps):
-            f_h = im_h // step
-            f_w = im_w // step
-            for i in range(f_h):
-                for j in range(f_w):
-                    for min_size in self.min_sizes[k]:
-                        s_kx = min_size / im_w
-                        s_ky = min_size / im_h
-                        cx = (j + 0.5) * step / im_w
-                        cy = (i + 0.5) * step / im_h
-                        anchors.append([cx, cy, s_kx, s_ky])
-        return np.array(anchors, dtype=np.float32)
-
-    def _decode_boxes(self, loc: np.ndarray, priors: np.ndarray) -> np.ndarray:
-        """Decode bounding boxes from model output and priors."""
-        boxes = np.concatenate([
-            priors[:, :2] + loc[:, :2] * self.variance[0] * priors[:, 2:],
-            priors[:, 2:] * np.exp(loc[:, 2:] * self.variance[1])
-        ], axis=1)
-        boxes[:, :2] -= boxes[:, 2:] / 2
-        boxes[:, 2:] += boxes[:, :2]
-        return boxes
-
-    def _decode_landmarks(self, ldm: np.ndarray, priors: np.ndarray) -> np.ndarray:
-        """Decode facial landmarks from model output and priors."""
-        landmarks = np.concatenate([
-            priors[:, :2] + ldm[:, i:i+2] * self.variance[0] * priors[:, 2:]
-            for i in range(0, 10, 2)
-        ], axis=1)
-        return landmarks.reshape(-1, 5, 2)
-
-    def preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int]]:
+    def preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[float, float]]:
         """
         Preprocess image for detection: resize, normalize, and transpose.
         
@@ -138,77 +96,83 @@ class FaceDetector:
             image (np.ndarray): Original BGR image.
             
         Returns:
-            Tuple[np.ndarray, float, Tuple[int, int]]: Preprocessed tensor, resize scale, and padding.
+            Tuple[np.ndarray, float, Tuple[float, float]]: Preprocessed tensor, resize scale, and padding.
         """
         if self.use_letterbox:
             resized, scale, pad = letterbox_resize(image, (self.input_width, self.input_height))
         else:
             resized = cv2.resize(image, (self.input_width, self.input_height))
-            scale = self.input_width / image.shape[1]
-            pad = (0, 0)
+            scale = min(self.input_width / image.shape[1], self.input_height / image.shape[0])
+            pad = (0.0, 0.0)
 
-        img = resized.astype(np.float32)
-        img -= np.array([104, 117, 123], dtype=np.float32)
-        img = img.transpose(2, 0, 1)
-        img = np.expand_dims(img, axis=0)
-        return img, scale, pad
+        # BGR -> RGB, HWC -> CHW, normalize to [0, 1]
+        blob = np.ascontiguousarray(
+            resized[:, :, ::-1].transpose(2, 0, 1)[None, ...],
+            dtype=np.float32
+        ) / 255.0
+
+        return blob, scale, pad
 
     def postprocess(
         self,
         outputs: List[np.ndarray],
         scale: float,
-        pad: Tuple[int, int],
+        pad: Tuple[float, float],
         orig_shape: Tuple[int, int]
     ) -> List[Face]:
         """Convert model outputs into Face objects."""
-        loc, conf, landms = outputs[0][0], outputs[1][0], outputs[2][0]
+        # Output shape: [1, num_detections, 21] or [num_detections, 21]
+        # Format per detection: [x1, y1, x2, y2, conf, class_id, kpt1_x, kpt1_y, kpt1_conf, ..., kpt5_x, kpt5_y, kpt5_conf]
+        pred = outputs[0][0] if outputs[0].ndim == 3 else outputs[0]
 
-        scores = conf[:, 1]
-        mask = scores > self.score_threshold
+        if pred.shape[0] == 0:
+            return []
+
+        # Filter by confidence
+        scores = pred[:, 4]
+        mask = scores >= self.score_threshold
         if not np.any(mask):
             return []
 
-        loc, scores, priors, landms = loc[mask], scores[mask], self.priors[mask], landms[mask]
+        pred = pred[mask]
+        scores = scores[mask]
 
-        boxes = self._decode_boxes(loc, priors)
-        landmarks = self._decode_landmarks(landms, priors)
-
-        # Rescale
-        boxes[:, [0, 2]] *= self.input_width
-        boxes[:, [1, 3]] *= self.input_height
-        landmarks[:, :, 0] *= self.input_width
-        landmarks[:, :, 1] *= self.input_height
-
-        # Subtract padding
         dw, dh = pad
-        boxes[:, [0, 2]] -= dw // 2
-        boxes[:, [1, 3]] -= dh // 2
-        landmarks[:, :, 0] -= dw // 2
-        landmarks[:, :, 1] -= dh // 2
-
-        # Final scale
-        boxes /= scale
-        landmarks /= scale
-
-        # Clip
         orig_h, orig_w = orig_shape
-        boxes[:, [0, 2]] = np.clip(boxes[:, [0, 2]], 0, orig_w)
-        boxes[:, [1, 3]] = np.clip(boxes[:, [1, 3]], 0, orig_h)
-        landmarks[:, :, 0] = np.clip(landmarks[:, :, 0], 0, orig_w)
-        landmarks[:, :, 1] = np.clip(landmarks[:, :, 1], 0, orig_h)
 
-        # NMS
-        keep = cv2.dnn.NMSBoxes(boxes.tolist(), scores.tolist(), 0.1, self.nms_threshold)
-        
         results = []
-        if len(keep) > 0:
-            indices = np.array(keep).flatten()
-            for idx in indices:
-                results.append(Face(
-                    bbox=boxes[idx],
-                    score=float(scores[idx]),
-                    landmarks=landmarks[idx]
-                ))
+        for detection in pred:
+            confidence = float(detection[4])
+
+            # Decode bounding box (undo letterbox)
+            x1 = (detection[0] - dw) / scale
+            y1 = (detection[1] - dh) / scale
+            x2 = (detection[2] - dw) / scale
+            y2 = (detection[3] - dh) / scale
+
+            # Clip to image bounds
+            x1 = np.clip(x1, 0, orig_w)
+            y1 = np.clip(y1, 0, orig_h)
+            x2 = np.clip(x2, 0, orig_w)
+            y2 = np.clip(y2, 0, orig_h)
+
+            bbox = np.array([x1, y1, x2, y2], dtype=np.float32)
+
+            # Decode 5 keypoints (triplets: x, y, visibility)
+            kpts_raw = detection[6:]
+            landmarks = np.zeros((5, 2), dtype=np.float32)
+            for i in range(5):
+                kx = (kpts_raw[i * 3] - dw) / scale
+                ky = (kpts_raw[i * 3 + 1] - dh) / scale
+                landmarks[i, 0] = np.clip(kx, 0, orig_w)
+                landmarks[i, 1] = np.clip(ky, 0, orig_h)
+
+            results.append(Face(
+                bbox=bbox,
+                score=confidence,
+                landmarks=landmarks
+            ))
+
         return results
 
     def detect(self, image: np.ndarray, score_quality: bool = True) -> List[Face]:

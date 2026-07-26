@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "similarfaces"
-version = "1.0.2"
+dynamic =["version"]
 description = "A production-ready Face Recognition library powered by ONNX"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Narek", email = "your.email@example.com"}
+    {name = "Narek", email = "narekbek1@gmail.com"}
 ]
 dependencies = [
     "numpy>=1.20.0",
@@ -23,8 +23,10 @@ dependencies = [
     "tqdm>=4.64.0",
 ]
 
+[tool.setuptools_scm]
+
 [project.urls]
-Homepage = "https://github.com/narek/similarfaces"
+Homepage = "https://github.com/narek-bektashyan/similarfaces"
 
 [tool.setuptools.packages.find]
 where = ["."]
